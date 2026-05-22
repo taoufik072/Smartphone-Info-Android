@@ -1,79 +1,157 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package fr.taoufikcode.data.repository
 
+import assertk.assertThat
+import assertk.assertions.isEqualTo
+import assertk.assertions.isTrue
+import fr.taoufikcode.data.data.SmartphoneData
 import fr.taoufikcode.data.smartphones.local.dao.HomeDao
 import fr.taoufikcode.data.smartphones.local.datastore.SyncDataStore
 import fr.taoufikcode.data.smartphones.local.entity.SmartphoneSummaryEntity
-import fr.taoufikcode.data.smartphones.remote.api.SmartphoneApi
-import fr.taoufikcode.data.smartphones.remote.dto.HomeResponseDto
-import fr.taoufikcode.data.smartphones.remote.dto.SmartphoneSummaryDto
+import fr.taoufikcode.data.smartphones.remote.SmartphoneRemoteDataSource
 import fr.taoufikcode.data.smartphones.repository.SmartphonesSummaryRepositoryImpl
+import fr.taoufikcode.data.utils.TestDispatcherProvider
+import fr.taoufikcode.data.utils.TestHttpClientFactory
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headers
+import android.database.sqlite.SQLiteFullException
+import fr.taoufikcode.data.core.DataError
+import fr.taoufikcode.data.core.toDomain
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import java.io.IOException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
 class SmartphonesSummaryRepositoryImplTest {
-
-    private lateinit var api: SmartphoneApi
+    private val dispatchers = TestDispatcherProvider(UnconfinedTestDispatcher())
     private lateinit var dao: HomeDao
     private lateinit var dataStore: SyncDataStore
     private lateinit var repository: SmartphonesSummaryRepositoryImpl
 
+    data class MockResponse(
+        val content: String,
+        val statusCode: HttpStatusCode,
+    )
+
+    private var listResponse = MockResponse(SmartphoneData.homeContentsJson, HttpStatusCode.OK)
+
     @Before
     fun setup() {
-        api = mockk()
         dao = mockk(relaxed = true)
         dataStore = mockk(relaxed = true)
-        repository = SmartphonesSummaryRepositoryImpl(api, dao, dataStore)
+        val engine =
+            MockEngine.create {
+                dispatcher = dispatchers.testDispatcher
+                addHandler { request ->
+                    when (request.url.encodedPath) {
+                        "/home/contents" -> {
+                            respond(
+                                content = listResponse.content,
+                                status = listResponse.statusCode,
+                                headers = headers { set("Content-Type", "application/json") },
+                            )
+                        }
+
+                        else -> {
+                            respond("Not mocked", HttpStatusCode.NotFound)
+                        }
+                    }
+                }
+            }
+        repository =
+            SmartphonesSummaryRepositoryImpl(
+                remoteDataSource = SmartphoneRemoteDataSource(TestHttpClientFactory.create(engine)),
+                homeDao = dao,
+                homeSyncDate = dataStore,
+                dispatchers = dispatchers,
+            )
     }
 
     @Test
-    fun `observeSmartphonesList should return mapped domain objects from dao`() = runTest {
-        // Given
-        val entity = SmartphoneSummaryEntity("1", "iPhone", "url")
-        coEvery { dao.observeHomeItems() } returns flowOf(listOf(entity))
+    fun `observeSmartphonesList returns mapped domain list from dao`() =
+        runTest {
+            val entity = SmartphoneSummaryEntity("1", "iPhone 15", "https://img.test/1.jpg")
+            every { dao.observeHomeItems() } returns flowOf(listOf(entity))
 
-        // When
-        val result = repository.observeSmartphonesList().first()
+            val result = repository.observeSmartphonesList().first()
 
-        // Then
-        assertEquals(1, result.size)
-        assertEquals("iPhone", result[0].model)
-    }
+            assertThat(result.size).isEqualTo(1)
+            assertThat(result[0].model).isEqualTo("iPhone 15")
+        }
 
     @Test
-    fun `syncHome success should fetch from api and save to dao`() = runTest {
-        // Given
-        val dto = SmartphoneSummaryDto("1", "iPhone", "url")
-        val response = HomeResponseDto(listOf(dto))
-        coEvery { api.getSmartphoneList() } returns response
+    fun `syncHome on 200 saves entities to dao and returns success`() =
+        runTest {
+            val result = repository.syncHome()
 
-        // When
-        val result = repository.syncHome()
-
-        // Then
-        assertTrue(result.isSuccess)
-        coVerify { api.getSmartphoneList() }
-        coVerify { dao.replaceAll(any()) }
-    }
+            assertThat(result.isSuccess).isTrue()
+            coVerify { dao.replaceAll(any()) }
+        }
 
     @Test
-    fun `syncHome failure should return failure`() = runTest {
-        // Given
-        val error = Exception("Network")
-        coEvery { api.getSmartphoneList() } throws error
+    fun `syncHome on 500 returns failure with server error message`() =
+        runTest {
+            listResponse = MockResponse("error", HttpStatusCode.InternalServerError)
 
-        // When
-        val result = repository.syncHome()
+            val result = repository.syncHome()
 
-        // Then
-        assertTrue(result.isFailure)
-        assertEquals(error, result.exceptionOrNull())
-    }
+            assertThat(result.isFailure).isTrue()
+            assertThat(result.exceptionOrNull()?.message).isEqualTo("Server error. Please try again later.")
+        }
+
+    @Test
+    fun `syncHome when dao throws SQLiteFullException returns failure with DISK_FULL message`() =
+        runTest {
+            coEvery { dao.replaceAll(any()) } throws SQLiteFullException()
+
+            val result = repository.syncHome()
+
+            assertThat(result.isFailure).isTrue()
+            assertThat(result.exceptionOrNull()?.message)
+                .isEqualTo(DataError.Local.DISK_FULL.toDomain())
+        }
+
+    @Test
+    fun `syncHome when dao throws generic exception returns failure with UNKNOWN message`() =
+        runTest {
+            coEvery { dao.replaceAll(any()) } throws RuntimeException("unexpected db error")
+
+            val result = repository.syncHome()
+
+            assertThat(result.isFailure).isTrue()
+            assertThat(result.exceptionOrNull()?.message)
+                .isEqualTo(DataError.Local.UNKNOWN.toDomain())
+        }
+
+    @Test
+    fun `saveSyncDateHome when dataStore throws IOException returns failure with DISK_FULL message`() =
+        runTest {
+            coEvery { dataStore.saveSyncDateHome(any()) } throws IOException("unexpected db error")
+
+            val result = repository.saveSyncDateHome(System.currentTimeMillis())
+
+            assertThat(result.isFailure).isTrue()
+            assertThat(result.exceptionOrNull()?.message)
+                .isEqualTo(DataError.Local.UNKNOWN.toDomain())
+        }
+
+    @Test
+    fun `saveSyncDateHome when dataStore succeeds returns success`() =
+        runTest {
+            val result = repository.saveSyncDateHome(System.currentTimeMillis())
+
+            assertThat(result.isSuccess).isTrue()
+            coVerify { dataStore.saveSyncDateHome(any()) }
+        }
 }

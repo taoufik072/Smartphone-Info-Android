@@ -1,10 +1,11 @@
 package fr.taoufikcode.domain.usecase.smartphone
 
 import fr.taoufikcode.domain.repository.smartphone.SmartphoneDetailsRepository
-import javax.inject.Inject
+import org.koin.core.annotation.Factory
 
-class GetSmartphoneDetailsByIdUseCase @Inject constructor(
-    private val repository: SmartphoneDetailsRepository
+@Factory
+class GetSmartphoneDetailsByIdUseCase(
+    private val repository: SmartphoneDetailsRepository,
 ) {
-    suspend operator fun invoke(id: String)= repository.getSmartphoneById(id)
+    suspend operator fun invoke(id: String) = repository.getSmartphoneById(id)
 }

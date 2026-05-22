@@ -6,5 +6,5 @@ import androidx.compose.runtime.Immutable
 data class SmartphoneDetailsState(
     val smartphone: SmartphoneDetailsUi? = null,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )

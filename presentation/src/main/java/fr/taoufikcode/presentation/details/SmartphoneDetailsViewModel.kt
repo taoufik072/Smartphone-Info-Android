@@ -3,49 +3,59 @@ package fr.taoufikcode.presentation.details
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
 import fr.taoufikcode.domain.usecase.smartphone.GetSmartphoneDetailsByIdUseCase
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
+import org.koin.core.annotation.KoinViewModel
 
-@HiltViewModel
-class SmartphoneDetailsViewModel @Inject constructor(
+@KoinViewModel
+class SmartphoneDetailsViewModel(
     private val getSmartphoneDetailsByIdUseCase: GetSmartphoneDetailsByIdUseCase,
-    savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
-
-    private val smartphoneId: String = checkNotNull(savedStateHandle["smartphoneId"])
+    private val smartphoneId: String? = savedStateHandle["smartphoneId"]
     private val _state = MutableStateFlow(SmartphoneDetailsState())
     val state: StateFlow<SmartphoneDetailsState> = _state.asStateFlow()
 
+    private val _events = Channel<SmartphoneDetailsEvent>()
+    val events = _events.receiveAsFlow()
+
     init {
-        loadSmartphone(smartphoneId)
+        if (smartphoneId != null) {
+            loadSmartphone()
+        } else {
+            _state.update { it.copy(isLoading = false, error = "Smartphone not found") }
+        }
     }
 
-    private fun loadSmartphone(id: String = smartphoneId) {
+    fun onAction(action: DetailsActions) {
+        when (action) {
+            DetailsActions.Retry -> if (smartphoneId != null) loadSmartphone()
+        }
+    }
+
+    private fun loadSmartphone() {
+        val id = smartphoneId ?: return
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+            _state.update { it.copy(isLoading = true, error = null) }
             getSmartphoneDetailsByIdUseCase(id)
                 .onSuccess { smartphone ->
                     _state.update {
                         it.copy(
                             smartphone = smartphone.toUi(),
                             isLoading = false,
-                            error = null
+                            error = null,
                         )
                     }
-                }
-                .onFailure { exception ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = exception.message ?: "Failed to load smartphone"
-                        )
-                    }
+                }.onFailure { exception ->
+                    val message = exception.message ?: "Failed to load smartphone"
+                    _state.update { it.copy(isLoading = false, error = message) }
+                    _events.trySend(SmartphoneDetailsEvent.ShowError(message))
                 }
         }
     }

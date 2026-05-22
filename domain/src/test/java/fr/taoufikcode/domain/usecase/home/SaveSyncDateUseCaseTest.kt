@@ -8,7 +8,6 @@ import org.junit.Before
 import org.junit.Test
 
 class SaveSyncDateUseCaseTest {
-
     private lateinit var repository: SmartphonesSummaryRepository
     private lateinit var useCase: SaveSyncDateUseCase
 
@@ -19,14 +18,15 @@ class SaveSyncDateUseCaseTest {
     }
 
     @Test
-    fun `execute should delegate to repository`() = runTest {
-        // Given
-        val timestamp = 1234L
+    fun `execute should delegate to repository`() =
+        runTest {
+            // Given
+            val timestamp = 1234L
 
-        // When
-        useCase(timestamp)
+            // When
+            useCase(timestamp)
 
-        // Then
-        coVerify { repository.saveSyncDateHome(timestamp) }
-    }
+            // Then
+            coVerify { repository.saveSyncDateHome(timestamp) }
+        }
 }

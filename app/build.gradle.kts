@@ -2,22 +2,31 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.hilt)
+    alias(libs.plugins.koin.compiler)
     alias(libs.plugins.ksp)
+    id("discover.kover")
 }
 
-
 android {
-    namespace = "com.taoufikcode.discover"
-    compileSdk = libs.versions.compileSdk.get().toInt()
+    namespace = "fr.taoufikcode.discover"
+    compileSdk =
+        libs.versions.compileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
         applicationId = "com.taoufikcode.discover"
-        minSdk = libs.versions.minSdk.get().toInt()
-        targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0.0"
-        
+        minSdk =
+            libs.versions.minSdk
+                .get()
+                .toInt()
+        targetSdk =
+            libs.versions.targetSdk
+                .get()
+                .toInt()
+        versionCode = 2
+        versionName = "1.0.1"
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
@@ -27,7 +36,7 @@ android {
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -43,7 +52,9 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
+        kotlinCompilerExtensionVersion =
+            libs.versions.compose.compiler
+                .get()
     }
 
     packaging {
@@ -56,26 +67,39 @@ android {
             dimension = "environment"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            buildConfigField("String", "API_BASE_URL", "\"https://taoufikcode.free.beeceptor.com/\"")
             buildConfigField("boolean", "ENABLE_LOGGING", "true")
         }
         create("production") {
             dimension = "environment"
-            buildConfigField("String", "API_BASE_URL", "\"https://taoufikcode.free.beeceptor.com/\"")
             buildConfigField("boolean", "ENABLE_LOGGING", "false")
         }
     }
 }
+
+koinCompiler {
+    userLogs = true
+    debugLogs = true
+    unsafeDslChecks = true
+    skipDefaultValues = true
+    compileSafety = true
+}
+
 kotlin {
     jvmToolchain(17)
 }
 dependencies {
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
 
     implementation(project(":domain"))
     implementation(project(":data"))
     implementation(project(":presentation"))
+    implementation(project(":common-core"))
+
+    // Koin
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.core)
+    implementation(libs.koin.android)
+    implementation(libs.koin.annotations)
+    implementation(libs.koin.androidx.compose)
 
     // Core Android
     implementation(libs.androidx.core.ktx)
@@ -85,28 +109,13 @@ dependencies {
     // Compose BOM & UI
     implementation(platform(libs.compose.bom))
     implementation(libs.bundles.compose)
-    
+
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
 
     // Kotlin Serialization
     implementation(libs.kotlinx.serialization.json)
 
-    // Retrofit & OkHttp
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.converter.kotlinx.serialization)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging)
-
-    // Room
-    implementation(libs.room.runtime)
-    implementation(libs.room.compiler)
-    implementation(libs.room.ktx)
-
     // Navigation
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.hilt.navigation.compose)
-
-    implementation(libs.androidx.datastore.preferences)
-
 }

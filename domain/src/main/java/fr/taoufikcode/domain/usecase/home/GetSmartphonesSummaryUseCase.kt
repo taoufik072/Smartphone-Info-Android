@@ -1,10 +1,11 @@
 package fr.taoufikcode.domain.usecase.home
 
 import fr.taoufikcode.domain.repository.home.SmartphonesSummaryRepository
-import javax.inject.Inject
+import org.koin.core.annotation.Factory
 
-class GetSmartphonesSummaryUseCase @Inject constructor(
-    private val repository: SmartphonesSummaryRepository
+@Factory
+class GetSmartphonesSummaryUseCase(
+    private val repository: SmartphonesSummaryRepository,
 ) {
     operator fun invoke() = repository.observeSmartphonesList()
 }

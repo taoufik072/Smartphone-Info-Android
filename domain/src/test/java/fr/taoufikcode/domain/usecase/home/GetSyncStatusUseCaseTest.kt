@@ -1,5 +1,7 @@
 package fr.taoufikcode.domain.usecase.home
 
+import assertk.assertThat
+import assertk.assertions.isEqualTo
 import fr.taoufikcode.domain.repository.home.SmartphonesSummaryRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -9,10 +11,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
-import kotlin.test.assertEquals
 
 class GetSyncStatusUseCaseTest {
-
     private lateinit var repository: SmartphonesSummaryRepository
     private lateinit var useCase: GetSyncStatusUseCase
 
@@ -23,16 +23,17 @@ class GetSyncStatusUseCaseTest {
     }
 
     @Test
-    fun `invoke should return repository flow`() = runTest {
-        // Given
-        val timestamp = 1234L
-        coEvery { repository.getSyncDateHomeStatus() } returns flowOf(timestamp)
+    fun `invoke should return repository flow`() =
+        runTest {
+            // Given
+            val timestamp = 1234L
+            coEvery { repository.getSyncDateHomeStatus() } returns flowOf(timestamp)
 
-        // When
-        val result = useCase.invoke()
+            // When
+            val result = useCase.invoke()
 
-        // Then
-        assertEquals(timestamp, result.first())
-        coVerify { repository.getSyncDateHomeStatus() }
-    }
+            // Then
+            assertThat(result.first()).isEqualTo(timestamp)
+            coVerify { repository.getSyncDateHomeStatus() }
+        }
 }

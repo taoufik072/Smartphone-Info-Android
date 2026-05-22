@@ -18,30 +18,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
+private val ErrorIconSize = 48.dp
+private val ErrorSpacing = 8.dp
+
 @Composable
 fun ErrorState(
     message: String,
     modifier: Modifier = Modifier,
-    onRetry: (() -> Unit)? = null
+    onRetry: (() -> Unit)? = null,
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(ErrorSpacing),
         ) {
             Icon(
                 imageVector = Icons.Default.Error,
                 contentDescription = "Error",
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.error
+                modifier = Modifier.size(ErrorIconSize),
+                tint = MaterialTheme.colorScheme.error,
             )
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.error,
             )
             if (onRetry != null) {
                 Button(onClick = onRetry) {
@@ -69,7 +72,7 @@ private fun ErrorStateWithRetryPreview() {
         Surface {
             ErrorState(
                 message = "Network connection failed",
-                onRetry = {}
+                onRetry = {},
             )
         }
     }

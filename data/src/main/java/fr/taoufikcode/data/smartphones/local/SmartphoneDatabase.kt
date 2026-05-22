@@ -8,7 +8,7 @@ import fr.taoufikcode.data.smartphones.local.entity.SmartphoneSummaryEntity
 @Database(
     entities = [SmartphoneSummaryEntity::class],
     version = 1,
-    exportSchema = false
+    exportSchema = false,
 )
 abstract class SmartphoneDatabase : RoomDatabase() {
     abstract fun homeListDao(): HomeDao

@@ -8,5 +8,5 @@ data class SmartphoneDetails(
     val price: Double,
     val description: String,
     val constructionDate: LocalDate?,
-    val imageUrl: String
+    val imageUrl: String,
 )

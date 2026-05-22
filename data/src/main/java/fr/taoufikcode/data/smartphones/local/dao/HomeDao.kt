@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface HomeDao {
-
     @Query("SELECT * FROM smartphones ORDER BY id")
     fun observeHomeItems(): Flow<List<SmartphoneSummaryEntity>>
 

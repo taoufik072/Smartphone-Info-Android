@@ -29,22 +29,27 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import fr.taoufikcode.presentation.common.EmptyState
 import fr.taoufikcode.presentation.common.ErrorState
 import fr.taoufikcode.presentation.common.LoadingState
 import fr.taoufikcode.presentation.common.ObserveAsEvents
+import org.koin.androidx.compose.koinViewModel
+
+private val ListContentPadding = 16.dp
+private val ItemPadding = 12.dp
+private val ThumbnailSize = 80.dp
 
 @Composable
 fun SmartphoneListScreenRoot(
-    viewModel: SmartphoneListViewModel = hiltViewModel(),
+    viewModel: SmartphoneListViewModel = koinViewModel(),
     onNavigate: (String) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackBarHostState = remember { SnackbarHostState() }
 
+    @Suppress("BracesOnWhenStatements")
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
             is SmartphoneListEvent.ShowError -> {
@@ -62,13 +67,13 @@ fun SmartphoneListScreenRoot(
                 else -> Unit
             }
             viewModel.onAction(onAction)
-        }
+        },
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SmartphoneListScreen(
+internal fun SmartphoneListScreen(
     state: SmartphoneListState,
     snackBarHostState: SnackbarHostState,
     onAction: (ListActions) -> Unit,
@@ -80,47 +85,60 @@ private fun SmartphoneListScreen(
         snackbarHost = { SnackbarHost(snackBarHostState) },
         content = { padding ->
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding),
             ) {
                 PullToRefreshBox(
                     isRefreshing = state.isRefreshing,
                     onRefresh = { onAction(ListActions.Refresh) },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 ) {
                     when {
-                        state.isLoading -> LoadingState()
-                        state.error != null -> ErrorState(
-                            message = state.error,
-                            onRetry = { onAction(ListActions.Refresh) }
-                        )
+                        state.isLoading -> {
+                            LoadingState()
+                        }
 
-                        state.isEmpty -> EmptyState(message = "No smartphones found")
-                        else -> SmartphoneList(
-                            smartphones = state.smartphones,
-                            onAction = onAction
-                        )
+                        state.error != null -> {
+                            ErrorState(
+                                message = state.error,
+                                onRetry = { onAction(ListActions.Refresh) },
+                            )
+                        }
+
+                        state.isEmpty -> {
+                            EmptyState(message = "No smartphones found")
+                        }
+
+                        else -> {
+                            SmartphoneList(
+                                smartphones = state.smartphones,
+                                onAction = onAction,
+                            )
+                        }
                     }
                 }
             }
-        })
+        },
+    )
 }
 
 @Composable
 private fun SmartphoneList(
     smartphones: List<SmartphoneSummaryUi>,
-    onAction: (ListActions) -> Unit
+    onAction: (ListActions) -> Unit,
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(ListContentPadding),
+        verticalArrangement = Arrangement.spacedBy(ItemPadding),
     ) {
-        items(
-            items = smartphones, key = { it.id }) { smartphone ->
+        items(items = smartphones, key = { it.id }) { smartphone ->
             SmartphoneListItem(
-                smartphone = smartphone, onClick = {
+                smartphone = smartphone,
+                onClick = {
                     onAction(ListActions.SmartphoneClick(smartphone.id))
-                }
+                },
             )
         }
     }
@@ -128,24 +146,26 @@ private fun SmartphoneList(
 
 @Composable
 private fun SmartphoneListItem(
-    smartphone: SmartphoneSummaryUi, onClick: () -> Unit
+    smartphone: SmartphoneSummaryUi,
+    onClick: () -> Unit,
 ) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(ItemPadding),
+            horizontalArrangement = Arrangement.spacedBy(ItemPadding),
         ) {
             AsyncImage(
-                modifier = Modifier.size(80.dp),
+                modifier = Modifier.size(ThumbnailSize),
                 model = smartphone.imageUrl,
-                contentDescription = smartphone.model,
-                contentScale = ContentScale.Crop
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
             )
 
             Text(
@@ -153,9 +173,8 @@ private fun SmartphoneListItem(
                 text = smartphone.model,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
-
         }
     }
 }
@@ -163,20 +182,27 @@ private fun SmartphoneListItem(
 @Preview(showBackground = true)
 @Composable
 private fun SmartphoneListPreview() {
-    val smartphones = listOf(
-        SmartphoneSummaryUi(
-            id = "1", model = "iPhone 15 Pro", imageUrl = "iphone15.jpg"
-        ), SmartphoneSummaryUi(
-            id = "2", model = "samsung s24 Pro", imageUrl = "iphone15.jpg"
-        ), SmartphoneSummaryUi(
-            id = "3", model = "Google Pixel 9", imageUrl = "iphone15.jpg"
+    val smartphones =
+        listOf(
+            SmartphoneSummaryUi(
+                id = "1",
+                model = "iPhone 15 Pro",
+                imageUrl = "iphone15.jpg",
+            ),
+            SmartphoneSummaryUi(
+                id = "2",
+                model = "samsung s24 Pro",
+                imageUrl = "iphone15.jpg",
+            ),
+            SmartphoneSummaryUi(
+                id = "3",
+                model = "Google Pixel 9",
+                imageUrl = "iphone15.jpg",
+            ),
         )
-    )
     MaterialTheme {
         Surface {
-            SmartphoneList(
-                smartphones = smartphones, onAction = {})
+            SmartphoneList(smartphones = smartphones, onAction = {})
         }
     }
 }
-

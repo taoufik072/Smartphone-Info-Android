@@ -6,5 +6,5 @@ import androidx.compose.runtime.Immutable
 data class SmartphoneSummaryUi(
     val id: String,
     val model: String,
-    val imageUrl: String
+    val imageUrl: String,
 )

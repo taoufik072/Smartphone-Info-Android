@@ -1,32 +1,20 @@
 plugins {
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.jetbrains.kotlin.jvm)
+    id("discover.kover")
 }
 
-android {
-    namespace = "fr.taoufikcode.common.core"
-    compileSdk = libs.versions.compileSdk.get().toInt()
-
-    defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlin {
-        jvmToolchain(17)
-    }
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.junit)
     implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.kotlinx.coroutines.android)
+
+    // Logging
+    implementation(libs.kermit)
 
     // Testing
     testImplementation(libs.junit)
+    testImplementation(libs.assertk)
     testImplementation(kotlin("test"))
 }

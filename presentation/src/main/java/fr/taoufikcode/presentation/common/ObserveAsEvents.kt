@@ -12,7 +12,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun <T> ObserveAsEvents(
     flow: Flow<T>,
-    onEvent: suspend (T) -> Unit
+    onEvent: suspend (T) -> Unit,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(key1 = lifecycleOwner) {

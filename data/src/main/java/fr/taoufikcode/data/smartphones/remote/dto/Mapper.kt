@@ -8,16 +8,15 @@ internal fun SmartphoneSummaryDto.toEntity(): SmartphoneSummaryEntity =
     SmartphoneSummaryEntity(
         id = id,
         model = model ?: "",
-        imageUrl = imageUrl ?: ""
+        imageUrl = imageUrl ?: "",
     )
 
-internal fun SmartphoneDetailsDto.toDomain(): SmartphoneDetails {
-    return SmartphoneDetails(
+internal fun SmartphoneDetailsDto.toDomain(): SmartphoneDetails =
+    SmartphoneDetails(
         id = id,
         model = model ?: "",
         price = price ?: 0.0,
         description = description ?: "",
         imageUrl = imageUrl ?: "",
-        constructionDate = constructionDate?.parseApiDate()
+        constructionDate = constructionDate?.parseApiDate(),
     )
-}

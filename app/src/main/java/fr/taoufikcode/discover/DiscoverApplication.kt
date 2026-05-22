@@ -1,7 +1,19 @@
 package fr.taoufikcode.discover
 
 import android.app.Application
-import dagger.hilt.android.HiltAndroidApp
+import fr.taoufikcode.discover.di.AppModule
+import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidLogger
+import org.koin.core.annotation.KoinApplication
+import org.koin.plugin.module.dsl.startKoin
 
-@HiltAndroidApp
-class DiscoverApplication : Application()
+@KoinApplication(modules = [AppModule::class])
+class DiscoverApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        startKoin<DiscoverApplication> {
+            androidLogger()
+            androidContext(this@DiscoverApplication)
+        }
+    }
+}

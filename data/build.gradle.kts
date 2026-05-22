@@ -2,15 +2,22 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt)
+    alias(libs.plugins.koin.compiler)
+    id("discover.kover")
 }
 
 android {
-    namespace = "com.taoufikcode.data"
-    compileSdk = libs.versions.compileSdk.get().toInt()
+    namespace = "fr.taoufikcode.data"
+    compileSdk =
+        libs.versions.compileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
+        minSdk =
+            libs.versions.minSdk
+                .get()
+                .toInt()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -21,25 +28,32 @@ android {
     kotlin {
         jvmToolchain(17)
     }
-    packaging {
+    buildFeatures {
+        buildConfig = true
+    }
 
+    packaging {
         resources {
             excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
         }
     }
 }
+
 dependencies {
+    implementation(project(":common-core"))
+    implementation(project(":domain"))
+
     implementation(libs.androidx.core.ktx)
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
+
+    // Koin
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.core)
+    implementation(libs.koin.annotations)
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
     androidTestImplementation(libs.room.testing)
-
-    implementation(project(":common-core"))
-    implementation(project(":domain"))
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
@@ -48,9 +62,12 @@ dependencies {
     // Kotlin Serialization
     implementation(libs.kotlinx.serialization.json)
 
-    implementation(libs.retrofit)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging)
+    // Ktor
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.ktor.client.logging)
 
     implementation(libs.androidx.datastore.preferences)
 
@@ -58,5 +75,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockk)
+    testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.assertk)
     testImplementation(kotlin("test"))
 }

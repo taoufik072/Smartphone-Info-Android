@@ -1,10 +1,11 @@
 package fr.taoufikcode.domain.usecase.home
 
 import fr.taoufikcode.domain.repository.home.SmartphonesSummaryRepository
-import javax.inject.Inject
+import org.koin.core.annotation.Factory
 
-class SyncSmartphonesUseCase @Inject constructor(
-    private val smartphonesSummaryRepository: SmartphonesSummaryRepository
+@Factory
+class SyncSmartphonesUseCase(
+    private val smartphonesSummaryRepository: SmartphonesSummaryRepository,
 ) {
     suspend operator fun invoke() = smartphonesSummaryRepository.syncHome()
 }
