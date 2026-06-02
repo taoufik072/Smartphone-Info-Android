@@ -1,4 +1,4 @@
-# Discover — Sample Android App
+# Discover — Smartphone Android App
 
 A sample Android application showcasing a Clean Architecture + MVI stack with modern tooling: Koin Compiler Plugin, Ktor, Jetpack Compose, Room, and a full quality pipeline (Detekt, ktlint, Kover, SonarCloud).
 
